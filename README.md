@@ -17,13 +17,13 @@ parser.parse { result in
 			route.routepoints 
 		}
 		// All track-points from all track segments for each track combined
-      	let trackepoints = parser.tracks.flatMap { track in 
-      		track.segments.flatMap { segment
-      			segment.trackpoints 
+      		let trackepoints = parser.tracks.flatMap { track in 
+      			track.segments.flatMap { segment
+      				segment.trackpoints 
+      			}
       		}
-      	}
 	case .failure(let error):
-       print("Error parsing the gpx file!")
+		print("Error parsing the gpx file!")
 	}
 } catch (let error) {
 	print("Error opening the gpx file!")
