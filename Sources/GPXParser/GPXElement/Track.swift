@@ -32,4 +32,8 @@ public final class TrackPoint: GPXElement, GPXPoint {
     override class var tag: String {
         return "trkpt"
     }
+
+    override public init() {
+        super.init()
+    }
 }

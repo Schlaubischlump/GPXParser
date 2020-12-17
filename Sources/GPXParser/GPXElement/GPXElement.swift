@@ -29,17 +29,17 @@ public class GPXElement {
 // MARK: - Protocols
 
 /// The outermost group of a gpx element. e.g a track
-protocol GPXGroup: GPXElement {
+public protocol GPXGroup: GPXElement {
     /// Reserved for lates usage
 }
 
 /// The segement e.g. track segement
-protocol GPXSegment: GPXElement {
+public protocol GPXSegment: GPXElement {
     /// Reserved for lates usage
 }
 
 /// Protocol for all kinds of GPX points.
-protocol GPXPoint: GPXElement {
+public protocol GPXPoint: GPXElement {
     init()
     init(coordinate: CLLocationCoordinate2D, properties: [String: Any])
     var coordinate: CLLocationCoordinate2D { get }
@@ -47,8 +47,8 @@ protocol GPXPoint: GPXElement {
 
 
 /// Default implementation for GPXPoint requirements.
-extension GPXPoint {
-    public var coordinate: CLLocationCoordinate2D {
+public extension GPXPoint {
+    var coordinate: CLLocationCoordinate2D {
         return self.properties["coordinate"] as! CLLocationCoordinate2D
     }
 
@@ -58,7 +58,7 @@ extension GPXPoint {
         self.properties["coordinate"] = coordinate
     }
 
-    public var description: String {
+    var description: String {
         let name = self.name ?? "nil"
         return "\(Self.self)(coordinate: \(self.coordinate), name: "+name+")"
     }

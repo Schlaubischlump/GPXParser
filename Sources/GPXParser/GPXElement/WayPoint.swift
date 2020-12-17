@@ -13,4 +13,8 @@ public final class WayPoint: GPXElement, GPXPoint, GPXSegment, GPXGroup {
     override class var tag: String {
         return "wpt"
     }
+
+    override public init() {
+        super.init()
+    }
 }

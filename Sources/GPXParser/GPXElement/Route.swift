@@ -22,4 +22,8 @@ public final class RoutePoint: GPXElement, GPXPoint, GPXSegment {
     override class var tag: String {
         return "rtept"
     }
+
+    override public init() {
+        super.init()
+    }
 }
