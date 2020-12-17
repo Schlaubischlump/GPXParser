@@ -36,7 +36,7 @@ public class GPXParser: NSObject, XMLParserDelegate {
     /// Partially found characters while parsing the file.
     private var foundCharacters: String = ""
 
-    init(file: URL) throws {
+    public init(file: URL) throws {
         self.file = file
 
         // Make sure the file to parse exists.
@@ -61,7 +61,7 @@ public class GPXParser: NSObject, XMLParserDelegate {
     /**
      Parse the specified GPX file.
      */
-    func parse(_ completion: @escaping (Result<Void, Error>) -> Void)  {
+    public func parse(_ completion: @escaping (Result<Void, Error>) -> Void)  {
         // Do not allow calling this function multiple times from different threads.
         // Do not allow calling this function more than once.
         guard !self.fileIsParsing, !self.fileIsParsed else { return }
