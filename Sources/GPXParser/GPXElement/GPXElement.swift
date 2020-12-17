@@ -19,9 +19,9 @@ public class GPXElement {
         }
     }
     /// This gpx element properties.
-    var properties: [String: Any] = [:]
+    public var properties: [String: Any] = [:]
     /// The name property all elements share.
-    var name: String? {
+    public var name: String? {
         return self.properties["name"] as? String
     }
 }
@@ -48,7 +48,7 @@ protocol GPXPoint: GPXElement {
 
 /// Default implementation for GPXPoint requirements.
 extension GPXPoint {
-    var coordinate: CLLocationCoordinate2D {
+    public var coordinate: CLLocationCoordinate2D {
         return self.properties["coordinate"] as! CLLocationCoordinate2D
     }
 
@@ -58,7 +58,7 @@ extension GPXPoint {
         self.properties["coordinate"] = coordinate
     }
 
-    var description: String {
+    public var description: String {
         let name = self.name ?? "nil"
         return "\(Self.self)(coordinate: \(self.coordinate), name: "+name+")"
     }

@@ -14,7 +14,7 @@ public final class Track: GPXElement, GPXGroup {
     }
 
     /// List with all segments
-    var segments: [TrackSegment] = []
+    public var segments: [TrackSegment] = []
 }
 
 /// Struct to represent a track segment.
@@ -24,7 +24,7 @@ public final class TrackSegment: GPXElement, GPXSegment {
     }
 
     /// List with all trackpoints in this segment.
-    var trackpoints: [TrackPoint] = []
+    public var trackpoints: [TrackPoint] = []
 }
 
 /// Struct to represent a track point.

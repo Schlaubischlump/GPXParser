@@ -14,7 +14,7 @@ public final class Route: GPXElement, GPXGroup {
     }
 
     /// List with all routepoints.
-    var routepoints: [RoutePoint] = []
+    public var routepoints: [RoutePoint] = []
 }
 
 /// Struct to represent a track point.
