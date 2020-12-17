@@ -11,7 +11,7 @@ import CoreLocation
 // MARK: - Base class
 
 /// Abstract base class that all kind of subgroups have in common.
-class GPXElement {
+public class GPXElement {
     /// The XML Tag used to identify this kind of element.
     class var tag: String {
         get {

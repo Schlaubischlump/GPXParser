@@ -9,7 +9,7 @@ import Foundation
 import CoreLocation
 
 /// Struct to represent a waypoint.
-final class WayPoint: GPXElement, GPXPoint, GPXSegment, GPXGroup {
+public final class WayPoint: GPXElement, GPXPoint, GPXSegment, GPXGroup {
     override class var tag: String {
         return "wpt"
     }

@@ -8,7 +8,7 @@
 import Foundation
 import CoreLocation
 
-class GPXParser: NSObject, XMLParserDelegate {
+public class GPXParser: NSObject, XMLParserDelegate {
     /// The GPX file to parse.
     public let file: URL
 
@@ -79,7 +79,7 @@ class GPXParser: NSObject, XMLParserDelegate {
 
     // MARK: - XMLParserDelegate
 
-    func parser(_ parser: XMLParser,
+    public func parser(_ parser: XMLParser,
                 didStartElement elementName: String,
                 namespaceURI: String?,
                 qualifiedName qName: String?,
@@ -125,11 +125,11 @@ class GPXParser: NSObject, XMLParserDelegate {
         }
     }
 
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
+    public func parser(_ parser: XMLParser, foundCharacters string: String) {
         self.foundCharacters += string;
     }
 
-    func parser(_ parser: XMLParser,
+    public func parser(_ parser: XMLParser,
                 didEndElement elementName: String,
                 namespaceURI: String?,
                 qualifiedName qName: String?) {
@@ -173,7 +173,7 @@ class GPXParser: NSObject, XMLParserDelegate {
             segment?.trackpoints.append(trackpoint)
 
         default:
-            // TODO: We do currently not support nested datastructures.
+            // TODO: We do currently not support nested datastructures. e.g extensions
             let element = self.stack.peek()
             element?.properties[elementName] = foundCharacters
         }
@@ -181,7 +181,7 @@ class GPXParser: NSObject, XMLParserDelegate {
         self.foundCharacters = ""
     }
 
-    func parserDidEndDocument(_ parser: XMLParser) {
+    public func parserDidEndDocument(_ parser: XMLParser) {
         self.fileIsParsed = true
         self.fileIsParsing = false
     }

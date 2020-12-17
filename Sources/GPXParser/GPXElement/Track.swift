@@ -8,7 +8,7 @@
 import Foundation
 
 /// Struct to represent a complete track.
-final class Track: GPXElement, GPXGroup {
+public final class Track: GPXElement, GPXGroup {
     override class var tag: String {
         return "trk"
     }
@@ -18,7 +18,7 @@ final class Track: GPXElement, GPXGroup {
 }
 
 /// Struct to represent a track segment.
-final class TrackSegment: GPXElement, GPXSegment {
+public final class TrackSegment: GPXElement, GPXSegment {
     override class var tag: String {
         return "trkseg"
     }
@@ -28,7 +28,7 @@ final class TrackSegment: GPXElement, GPXSegment {
 }
 
 /// Struct to represent a track point.
-final class TrackPoint: GPXElement, GPXPoint {
+public final class TrackPoint: GPXElement, GPXPoint {
     override class var tag: String {
         return "trkpt"
     }
