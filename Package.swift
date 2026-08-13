@@ -1,4 +1,11 @@
 // swift-tools-version:5.2
+
+//
+//  Package.swift
+//  GPXParser
+//
+//  Created by David Klopp on 13.08.2026.
+//
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
