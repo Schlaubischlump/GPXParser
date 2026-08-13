@@ -1,5 +1,5 @@
-import XCTest
 @testable import GPXParser
+import XCTest
 
 /// Amount of waypoints, routerpoints and trackpoints for each file.
 let solutionDict = [
@@ -80,7 +80,7 @@ let solutionDict = [
     "BrittanyJura/Vitry-le-Francois_Langres.gpx": (0, 0, 1688),
     "RoscoffCoastal/simplified/Plougasou-plestin-parcours.gpx": (0, 0, 934),
     "BrittanyJura/VoieVerteHauteVosges.gpx": (0, 0, 1298),
-    "BrittanyJura/SimplifiedGpx/Salins-les-Bains_Fleurier.gpx_0.gpx": (0, 556, 0)
+    "BrittanyJura/SimplifiedGpx/Salins-les-Bains_Fleurier.gpx_0.gpx": (0, 556, 0),
 ]
 
 /// Get the url to the test directory
@@ -93,10 +93,10 @@ func resourceURLInTestFolder(_ pathComponent: String) -> URL {
 }
 
 final class GPXParserTests: XCTestCase {
-    func testGPXParser() {
+    func testGPXParser() throws {
         let sampleURL = resourceURLInTestFolder("Samples")
         let fileManager = FileManager.default
-        let enumerator = fileManager.enumerator(atPath: sampleURL.path)!
+        let enumerator = try XCTUnwrap(fileManager.enumerator(atPath: sampleURL.path))
 
         for element in enumerator {
             guard let path = element as? String else {
@@ -118,7 +118,7 @@ final class GPXParserTests: XCTestCase {
                         let trackepoints = parser.tracks.flatMap { $0.segments.flatMap { $0.trackpoints }}
 
                         // Just to be sure warn on empty files.
-                        if waypoints.isEmpty && routepoints.isEmpty && trackepoints.isEmpty {
+                        if waypoints.isEmpty, routepoints.isEmpty, trackepoints.isEmpty {
                             print("File: " + path + "\nWarning: GPX file seems to be Empty")
                         }
 
@@ -127,15 +127,14 @@ final class GPXParserTests: XCTestCase {
                         XCTAssertEqual(waypoints.count, wCounts)
                         XCTAssertEqual(routepoints.count, rCounts)
                         XCTAssertEqual(trackepoints.count, tCounts)
-                    case .failure(let error):
+                    case let .failure(error):
                         fatalError("File: " + path + "\nParse error: " + error.localizedDescription)
                     }
                 }
-            } catch (let error) {
+            } catch {
                 fatalError("File: " + path + "\nOpening error: " + error.localizedDescription)
             }
         }
-
     }
 
     static var allTests = [

@@ -5,8 +5,8 @@
 //  Created by David Klopp on 13.12.20.
 //
 
-import Foundation
 import CoreLocation
+import Foundation
 
 /// Struct to represent a waypoint.
 public final class WayPoint: GPXElement, GPXPoint, GPXSegment, GPXGroup {

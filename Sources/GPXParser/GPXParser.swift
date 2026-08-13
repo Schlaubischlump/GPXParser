@@ -5,10 +5,10 @@
 //  Created by David Klopp on 13.12.20.
 //
 
-import Foundation
 import CoreLocation
+import Foundation
 
-public class GPXParser: NSObject, XMLParserDelegate {
+public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
     /// The GPX file to parse.
     public let file: URL
 
@@ -30,7 +30,7 @@ public class GPXParser: NSObject, XMLParserDelegate {
     /// Internal XMLParser instance.
     private let parser: XMLParser
 
-    // Stack which stores the currently parsed elements.
+    /// Stack which stores the currently parsed elements.
     private var stack: Stack<GPXElement>
 
     /// Partially found characters while parsing the file.
@@ -51,138 +51,156 @@ public class GPXParser: NSObject, XMLParserDelegate {
             throw GPXError.CreateParser("Could not create XML parser.")
         }
 
-        self.stack = Stack()
+        stack = Stack()
 
         // Init the class and assign the delegate.
         super.init()
-        self.parser.delegate = self
+        parser.delegate = self
     }
 
     /**
      Parse the specified GPX file.
      */
-    public func parse(_ completion: @escaping (Result<Void, Error>) -> Void)  {
+    public func parse(_ completion: @escaping (Result<Void, Error>) -> Void) {
         // Do not allow calling this function multiple times from different threads.
         // Do not allow calling this function more than once.
-        guard !self.fileIsParsing, !self.fileIsParsed else { return }
+        guard !fileIsParsing, !fileIsParsed else { return }
 
         // We are currently parsing the file.
-        self.fileIsParsing = true
+        fileIsParsing = true
 
-        if self.parser.parse() {
+        if parser.parse() {
             completion(.success(()))
         } else {
-            let error = self.parser.parserError ?? GPXError.UnknowParseError("Could not parse file.")
+            let error = parser.parserError ?? GPXError.UnknowParseError("Could not parse file.")
             completion(.failure(error))
+        }
+    }
+
+    /// Parse the document without exposing the parser's callback API to clients.
+    ///
+    /// XMLParser performs the parse synchronously. This overload presents that work
+    /// as an async operation so applications can compose it with document pickers,
+    /// route selection, and device RPC using structured concurrency.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func parse() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            parse { result in
+                continuation.resume(with: result)
+            }
         }
     }
 
     // MARK: - XMLParserDelegate
 
-    public func parser(_ parser: XMLParser,
-                didStartElement elementName: String,
-                namespaceURI: String?,
-                qualifiedName qName: String?,
-                attributes attributeDict: [String : String] = [:]) {
-
-        self.foundCharacters = ""
+    public func parser(_: XMLParser,
+                       didStartElement elementName: String,
+                       namespaceURI _: String?,
+                       qualifiedName _: String?,
+                       attributes attributeDict: [String: String] = [:])
+    {
+        foundCharacters = ""
 
         switch elementName {
         case WayPoint.tag:
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
-                  let lat = Double(latStr), let long = Double(longStr) else {
+                  let lat = Double(latStr), let long = Double(longStr)
+            else {
                 break
             }
             let point = WayPoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-            self.stack.push(point)
+            stack.push(point)
         case Track.tag:
             // Create a new track.
-            self.stack.push(Track())
+            stack.push(Track())
         case TrackSegment.tag:
             // Create a new track segment.
-            self.stack.push(TrackSegment())
+            stack.push(TrackSegment())
         case TrackPoint.tag:
             // Create a new track point.
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
-                  let lat = Double(latStr), let long = Double(longStr) else {
+                  let lat = Double(latStr), let long = Double(longStr)
+            else {
                 break
             }
             let point = TrackPoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-            self.stack.push(point)
+            stack.push(point)
         case Route.tag:
             // Create a new route
-            self.stack.push(Route())
+            stack.push(Route())
         case RoutePoint.tag:
             // Create a new route point.
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
-                  let lat = Double(latStr), let long = Double(longStr) else {
+                  let lat = Double(latStr), let long = Double(longStr)
+            else {
                 break
             }
             let point = RoutePoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-            self.stack.push(point)
+            stack.push(point)
         default:
             break
         }
     }
 
-    public func parser(_ parser: XMLParser, foundCharacters string: String) {
-        self.foundCharacters += string;
+    public func parser(_: XMLParser, foundCharacters string: String) {
+        foundCharacters += string
     }
 
-    public func parser(_ parser: XMLParser,
-                didEndElement elementName: String,
-                namespaceURI: String?,
-                qualifiedName qName: String?) {
-
-
+    public func parser(_: XMLParser,
+                       didEndElement elementName: String,
+                       namespaceURI _: String?,
+                       qualifiedName _: String?)
+    {
         switch elementName {
-
         // Waypoint
         case WayPoint.tag:
             // Add a waypoint
-            guard let waypoint = self.stack.pop() as? WayPoint else { break }
-            self.waypoints.append(waypoint)
+            guard let waypoint = stack.pop() as? WayPoint else { break }
+            waypoints.append(waypoint)
 
         // Route
         case Route.tag:
             // Add the complete route
-            guard let route = self.stack.pop() as? Route else { break }
-            self.routes.append(route)
+            guard let route = stack.pop() as? Route else { break }
+            routes.append(route)
+
         case RoutePoint.tag:
             // Add the trackpoint to the segment.
-            guard let routepoint = self.stack.pop() as? RoutePoint else { break }
-            let route = self.stack.peek() as? Route
+            guard let routepoint = stack.pop() as? RoutePoint else { break }
+            let route = stack.peek() as? Route
             route?.routepoints.append(routepoint)
 
         // Track
         case Track.tag:
             // Add the complete track to the list and pop it from the stack.
-            guard let track = self.stack.pop() as? Track else { break }
-            self.tracks.append(track)
+            guard let track = stack.pop() as? Track else { break }
+            tracks.append(track)
+
         case TrackSegment.tag:
             // Add the segment to the track.
             // Pop the segment from the stack.
-            guard let segment = self.stack.pop() as? TrackSegment else { break }
+            guard let segment = stack.pop() as? TrackSegment else { break }
             // Take a peek at the new top most element, the track.
-            let group = self.stack.peek() as? Track
+            let group = stack.peek() as? Track
             group?.segments.append(segment)
+
         case TrackPoint.tag:
             // Add the trackpoint to the segment.
-            guard let trackpoint = self.stack.pop() as? TrackPoint else { break }
-            let segment = self.stack.peek() as? TrackSegment
+            guard let trackpoint = stack.pop() as? TrackPoint else { break }
+            let segment = stack.peek() as? TrackSegment
             segment?.trackpoints.append(trackpoint)
 
         default:
             // TODO: We do currently not support nested datastructures. e.g extensions
-            let element = self.stack.peek()
+            let element = stack.peek()
             element?.properties[elementName] = foundCharacters
         }
 
-        self.foundCharacters = ""
+        foundCharacters = ""
     }
 
-    public func parserDidEndDocument(_ parser: XMLParser) {
-        self.fileIsParsed = true
-        self.fileIsParsing = false
+    public func parserDidEndDocument(_: XMLParser) {
+        fileIsParsed = true
+        fileIsParsing = false
     }
 }

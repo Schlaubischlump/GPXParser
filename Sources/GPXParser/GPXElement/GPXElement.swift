@@ -1,12 +1,12 @@
 //
-//  GPXProtocols.swift
+//  GPXElement.swift
 //  GPXParser
 //
 //  Created by David Klopp on 16.12.20.
 //
 
-import Foundation
 import CoreLocation
+import Foundation
 
 // MARK: - Base class
 
@@ -14,15 +14,14 @@ import CoreLocation
 public class GPXElement {
     /// The XML Tag used to identify this kind of element.
     class var tag: String {
-        get {
-            fatalError("Must be overriden by a subclass")
-        }
+        fatalError("Must be overriden by a subclass")
     }
+
     /// This gpx element properties.
     public var properties: [String: Any] = [:]
     /// The name property all elements share.
     public var name: String? {
-        return self.properties["name"] as? String
+        return properties["name"] as? String
     }
 }
 
@@ -30,12 +29,12 @@ public class GPXElement {
 
 /// The outermost group of a gpx element. e.g a track
 public protocol GPXGroup: GPXElement {
-    /// Reserved for lates usage
+    // Reserved for lates usage
 }
 
 /// The segement e.g. track segement
 public protocol GPXSegment: GPXElement {
-    /// Reserved for lates usage
+    // Reserved for lates usage
 }
 
 /// Protocol for all kinds of GPX points.
@@ -45,11 +44,10 @@ public protocol GPXPoint: GPXElement {
     var coordinate: CLLocationCoordinate2D { get }
 }
 
-
 /// Default implementation for GPXPoint requirements.
 public extension GPXPoint {
     var coordinate: CLLocationCoordinate2D {
-        return self.properties["coordinate"] as! CLLocationCoordinate2D
+        return properties["coordinate"] as! CLLocationCoordinate2D
     }
 
     init(coordinate: CLLocationCoordinate2D, properties: [String: Any] = [:]) {
@@ -60,6 +58,6 @@ public extension GPXPoint {
 
     var description: String {
         let name = self.name ?? "nil"
-        return "\(Self.self)(coordinate: \(self.coordinate), name: "+name+")"
+        return "\(Self.self)(coordinate: \(coordinate), name: " + name + ")"
     }
 }

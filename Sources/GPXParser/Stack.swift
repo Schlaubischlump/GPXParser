@@ -7,7 +7,7 @@
 
 import Foundation
 
-internal final class Stack<T> {
+final class Stack<T> {
     private var _stack: [T] = []
 
     /**
@@ -15,7 +15,7 @@ internal final class Stack<T> {
      - Parameter element: Element to add to the top of the stack
      */
     func push(_ element: T) {
-        self._stack.append(element)
+        _stack.append(element)
     }
 
     /**
@@ -23,7 +23,7 @@ internal final class Stack<T> {
      - Return: Previous top most element or nil if none exists
      */
     func pop() -> T? {
-        self._stack.popLast()
+        _stack.popLast()
     }
 
     /**
@@ -31,6 +31,6 @@ internal final class Stack<T> {
      - Current: Previous top most element or nil if none exists
      */
     func peek() -> T? {
-        return self._stack.last
+        return _stack.last
     }
 }
