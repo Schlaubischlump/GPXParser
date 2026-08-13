@@ -36,6 +36,9 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
     /// Partially found characters while parsing the file.
     private var foundCharacters: String = ""
 
+    /// The first XML element, used to reject well-formed non-GPX documents.
+    private var documentElementName: String?
+
     public init(file: URL) throws {
         self.file = file
 
@@ -69,10 +72,11 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
         // We are currently parsing the file.
         fileIsParsing = true
 
-        if parser.parse() {
+        if parser.parse(), documentElementName == "gpx" {
             completion(.success(()))
         } else {
-            let error = parser.parserError ?? GPXError.UnknowParseError("Could not parse file.")
+            let error = parser.parserError
+                ?? GPXError.InvalidDocument("The document root must be a GPX element.")
             completion(.failure(error))
         }
     }
@@ -101,10 +105,15 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
     {
         foundCharacters = ""
 
+        if documentElementName == nil {
+            documentElementName = elementName
+        }
+
         switch elementName {
         case WayPoint.tag:
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
-                  let lat = Double(latStr), let long = Double(longStr)
+                  let lat = Double(latStr), let long = Double(longStr),
+                  CLLocationCoordinate2DIsValid(.init(latitude: lat, longitude: long))
             else {
                 break
             }
@@ -119,7 +128,8 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
         case TrackPoint.tag:
             // Create a new track point.
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
-                  let lat = Double(latStr), let long = Double(longStr)
+                  let lat = Double(latStr), let long = Double(longStr),
+                  CLLocationCoordinate2DIsValid(.init(latitude: lat, longitude: long))
             else {
                 break
             }
@@ -131,7 +141,8 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
         case RoutePoint.tag:
             // Create a new route point.
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
-                  let lat = Double(latStr), let long = Double(longStr)
+                  let lat = Double(latStr), let long = Double(longStr),
+                  CLLocationCoordinate2DIsValid(.init(latitude: lat, longitude: long))
             else {
                 break
             }

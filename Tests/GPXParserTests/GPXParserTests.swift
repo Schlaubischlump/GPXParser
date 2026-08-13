@@ -1,4 +1,5 @@
 @testable import GPXParser
+import Foundation
 import XCTest
 
 /// Amount of waypoints, routerpoints and trackpoints for each file.
@@ -93,6 +94,23 @@ func resourceURLInTestFolder(_ pathComponent: String) -> URL {
 }
 
 final class GPXParserTests: XCTestCase {
+    func testRejectsWellFormedNonGPXDocument() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("not-gpx-\(UUID().uuidString).xml")
+        try Data("<html/>".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = try GPXParser(file: url)
+        let completion = expectation(description: "parse completion")
+        parser.parse { result in
+            if case .success = result {
+                XCTFail("Expected a non-GPX document to be rejected")
+            }
+            completion.fulfill()
+        }
+        wait(for: [completion], timeout: 1)
+    }
+
     func testGPXParser() throws {
         let sampleURL = resourceURLInTestFolder("Samples")
         let fileManager = FileManager.default
@@ -138,6 +156,7 @@ final class GPXParserTests: XCTestCase {
     }
 
     static var allTests = [
+        ("testRejectsWellFormedNonGPXDocument", testRejectsWellFormedNonGPXDocument),
         ("testGPXParser", testGPXParser),
     ]
 }

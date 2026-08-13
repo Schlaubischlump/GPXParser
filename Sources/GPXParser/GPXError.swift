@@ -11,5 +11,6 @@ import Foundation
 public enum GPXError: Error {
     case FileNotFound(_ message: String)
     case CreateParser(_ message: String)
+    case InvalidDocument(_ message: String)
     case UnknowParseError(_ message: String)
 }
