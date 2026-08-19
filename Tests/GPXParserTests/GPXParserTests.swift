@@ -5,8 +5,8 @@
 //  Created by David Klopp on 13.08.2026.
 //
 
-@testable import GPXParser
 import Foundation
+@testable import GPXParser
 import XCTest
 
 /// Amount of waypoints, routerpoints and trackpoints for each file.
