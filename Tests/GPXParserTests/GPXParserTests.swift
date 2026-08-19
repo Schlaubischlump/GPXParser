@@ -139,8 +139,8 @@ final class GPXParserTests: XCTestCase {
                     switch result {
                     case .success():
                         let waypoints = parser.waypoints
-                        let routepoints = parser.routes.flatMap { $0.routepoints }
-                        let trackepoints = parser.tracks.flatMap { $0.segments.flatMap { $0.trackpoints }}
+                        let routepoints = parser.routes.flatMap(\.routepoints)
+                        let trackepoints = parser.tracks.flatMap { $0.segments.flatMap(\.trackpoints) }
 
                         // Just to be sure warn on empty files.
                         if waypoints.isEmpty, routepoints.isEmpty, trackepoints.isEmpty {

@@ -31,6 +31,6 @@ final class Stack<T> {
      - Current: Previous top most element or nil if none exists
      */
     func peek() -> T? {
-        return _stack.last
+        _stack.last
     }
 }

@@ -21,7 +21,7 @@ public class GPXElement {
     public var properties: [String: Any] = [:]
     /// The name property all elements share.
     public var name: String? {
-        return properties["name"] as? String
+        properties["name"] as? String
     }
 }
 
@@ -47,7 +47,7 @@ public protocol GPXPoint: GPXElement {
 /// Default implementation for GPXPoint requirements.
 public extension GPXPoint {
     var coordinate: CLLocationCoordinate2D {
-        return properties["coordinate"] as! CLLocationCoordinate2D
+        properties["coordinate"] as! CLLocationCoordinate2D
     }
 
     init(coordinate: CLLocationCoordinate2D, properties: [String: Any] = [:]) {
@@ -57,7 +57,7 @@ public extension GPXPoint {
     }
 
     var description: String {
-        let name = self.name ?? "nil"
+        let name = name ?? "nil"
         return "\(Self.self)(coordinate: \(coordinate), name: " + name + ")"
     }
 }

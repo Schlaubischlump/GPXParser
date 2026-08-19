@@ -10,7 +10,7 @@ import Foundation
 /// Struct to represent a complete track.
 public final class Track: GPXElement, GPXGroup {
     override class var tag: String {
-        return "trk"
+        "trk"
     }
 
     /// List with all segments
@@ -20,7 +20,7 @@ public final class Track: GPXElement, GPXGroup {
 /// Struct to represent a track segment.
 public final class TrackSegment: GPXElement, GPXSegment {
     override class var tag: String {
-        return "trkseg"
+        "trkseg"
     }
 
     /// List with all trackpoints in this segment.
@@ -30,7 +30,7 @@ public final class TrackSegment: GPXElement, GPXSegment {
 /// Struct to represent a track point.
 public final class TrackPoint: GPXElement, GPXPoint {
     override class var tag: String {
-        return "trkpt"
+        "trkpt"
     }
 
     override public init() {

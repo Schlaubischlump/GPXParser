@@ -11,7 +11,7 @@ import Foundation
 /// Struct to represent a waypoint.
 public final class WayPoint: GPXElement, GPXPoint, GPXSegment, GPXGroup {
     override class var tag: String {
-        return "wpt"
+        "wpt"
     }
 
     override public init() {
