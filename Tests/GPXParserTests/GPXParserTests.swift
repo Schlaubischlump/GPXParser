@@ -101,6 +101,58 @@ func resourceURLInTestFolder(_ pathComponent: String) -> URL {
 }
 
 final class GPXParserTests: XCTestCase {
+    func testInvalidPointDoesNotPopItsContainingRoute() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("invalid-point-\(UUID().uuidString).gpx")
+        let document = """
+        <gpx><rte><rtept lat="invalid" lon="2"><name>Ignored</name></rtept>
+        <rtept lat="1" lon="2"/></rte></gpx>
+        """
+        try Data(document.utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = try GPXParser(file: url)
+        let completion = expectation(description: "parse completion")
+        parser.parse { result in
+            if case let .failure(error) = result { XCTFail("Unexpected error: \(error)") }
+            XCTAssertEqual(parser.routes.count, 1)
+            XCTAssertEqual(parser.routes.first?.routepoints.count, 1)
+            completion.fulfill()
+        }
+        wait(for: [completion], timeout: 1)
+    }
+
+    func testRepeatedParseCompletesWithStateError() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("repeated-parse-\(UUID().uuidString).gpx")
+        try Data("<gpx/>".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = try GPXParser(file: url)
+        let first = expectation(description: "first parse")
+        parser.parse { result in
+            if case let .failure(error) = result { XCTFail("Unexpected error: \(error)") }
+            first.fulfill()
+        }
+        wait(for: [first], timeout: 1)
+
+        let repeated = expectation(description: "repeated parse")
+        parser.parse { result in
+            guard case let .failure(error) = result else {
+                XCTFail("Expected a state error")
+                repeated.fulfill()
+                return
+            }
+            guard case GPXError.ParseAlreadyAttempted = error else {
+                XCTFail("Unexpected error: \(error)")
+                repeated.fulfill()
+                return
+            }
+            repeated.fulfill()
+        }
+        wait(for: [repeated], timeout: 1)
+    }
+
     func testRejectsWellFormedNonGPXDocument() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("not-gpx-\(UUID().uuidString).xml")
@@ -163,6 +215,8 @@ final class GPXParserTests: XCTestCase {
     }
 
     static var allTests = [
+        ("testInvalidPointDoesNotPopItsContainingRoute", testInvalidPointDoesNotPopItsContainingRoute),
+        ("testRepeatedParseCompletesWithStateError", testRepeatedParseCompletesWithStateError),
         ("testRejectsWellFormedNonGPXDocument", testRejectsWellFormedNonGPXDocument),
         ("testGPXParser", testGPXParser),
     ]

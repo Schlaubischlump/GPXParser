@@ -9,14 +9,36 @@ import CoreLocation
 import Foundation
 
 public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
+    private enum ParseState {
+        case idle
+        case parsing
+        case finished(success: Bool)
+    }
+
+    private enum ParsingFrame {
+        case element(GPXElement)
+        case ignored
+
+        var element: GPXElement? {
+            guard case let .element(element) = self else { return nil }
+            return element
+        }
+    }
+
     /// The GPX file to parse.
     public let file: URL
 
     /// True if the file is currently parsed.
-    public private(set) var fileIsParsing: Bool = false
+    public var fileIsParsing: Bool {
+        stateLock.withLock { if case .parsing = parseState { true } else { false } }
+    }
 
     /// True if the file is parsed.
-    public private(set) var fileIsParsed: Bool = false
+    public var fileIsParsed: Bool {
+        stateLock.withLock {
+            if case .finished(success: true) = parseState { true } else { false }
+        }
+    }
 
     /// List with all waypoints found inside the file.
     public private(set) var waypoints: [WayPoint] = []
@@ -31,13 +53,15 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
     private let parser: XMLParser
 
     /// Stack which stores the currently parsed elements.
-    private var stack: Stack<GPXElement>
+    private var stack: Stack<ParsingFrame>
 
     /// Partially found characters while parsing the file.
     private var foundCharacters: String = ""
 
     /// The first XML element, used to reject well-formed non-GPX documents.
     private var documentElementName: String?
+    private let stateLock = NSLock()
+    private var parseState: ParseState = .idle
 
     public init(file: URL) throws {
         self.file = file
@@ -65,14 +89,27 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
      Parse the specified GPX file.
      */
     public func parse(_ completion: @escaping (Result<Void, Error>) -> Void) {
-        // Do not allow calling this function multiple times from different threads.
-        // Do not allow calling this function more than once.
-        guard !fileIsParsing, !fileIsParsed else { return }
+        let stateError: Error? = stateLock.withLock {
+            switch parseState {
+            case .idle:
+                parseState = .parsing
+                return nil
+            case .parsing:
+                return GPXError.ParseInProgress
+            case .finished:
+                return GPXError.ParseAlreadyAttempted
+            }
+        }
+        // Every invocation must complete; otherwise the async wrapper leaks its
+        // checked continuation on repeated or concurrent parsing attempts.
+        if let stateError {
+            completion(.failure(stateError))
+            return
+        }
 
-        // We are currently parsing the file.
-        fileIsParsing = true
-
-        if parser.parse(), documentElementName == "gpx" {
+        let succeeded = parser.parse() && documentElementName == "gpx"
+        stateLock.withLock { parseState = .finished(success: succeeded) }
+        if succeeded {
             completion(.success(()))
         } else {
             let error = parser.parserError
@@ -115,39 +152,42 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
                   let lat = Double(latStr), let long = Double(longStr),
                   CLLocationCoordinate2DIsValid(.init(latitude: lat, longitude: long))
             else {
+                stack.push(.ignored)
                 break
             }
             let point = WayPoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-            stack.push(point)
+            stack.push(.element(point))
         case Track.tag:
             // Create a new track.
-            stack.push(Track())
+            stack.push(.element(Track()))
         case TrackSegment.tag:
             // Create a new track segment.
-            stack.push(TrackSegment())
+            stack.push(.element(TrackSegment()))
         case TrackPoint.tag:
             // Create a new track point.
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
                   let lat = Double(latStr), let long = Double(longStr),
                   CLLocationCoordinate2DIsValid(.init(latitude: lat, longitude: long))
             else {
+                stack.push(.ignored)
                 break
             }
             let point = TrackPoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-            stack.push(point)
+            stack.push(.element(point))
         case Route.tag:
             // Create a new route
-            stack.push(Route())
+            stack.push(.element(Route()))
         case RoutePoint.tag:
             // Create a new route point.
             guard let latStr = attributeDict["lat"], let longStr = attributeDict["lon"],
                   let lat = Double(latStr), let long = Double(longStr),
                   CLLocationCoordinate2DIsValid(.init(latitude: lat, longitude: long))
             else {
+                stack.push(.ignored)
                 break
             }
             let point = RoutePoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-            stack.push(point)
+            stack.push(.element(point))
         default:
             break
         }
@@ -166,44 +206,44 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
         // Waypoint
         case WayPoint.tag:
             // Add a waypoint
-            guard let waypoint = stack.pop() as? WayPoint else { break }
+            guard let waypoint = stack.pop()?.element as? WayPoint else { break }
             waypoints.append(waypoint)
 
         // Route
         case Route.tag:
             // Add the complete route
-            guard let route = stack.pop() as? Route else { break }
+            guard let route = stack.pop()?.element as? Route else { break }
             routes.append(route)
 
         case RoutePoint.tag:
             // Add the trackpoint to the segment.
-            guard let routepoint = stack.pop() as? RoutePoint else { break }
-            let route = stack.peek() as? Route
+            guard let routepoint = stack.pop()?.element as? RoutePoint else { break }
+            let route = stack.peek()?.element as? Route
             route?.routepoints.append(routepoint)
 
         // Track
         case Track.tag:
             // Add the complete track to the list and pop it from the stack.
-            guard let track = stack.pop() as? Track else { break }
+            guard let track = stack.pop()?.element as? Track else { break }
             tracks.append(track)
 
         case TrackSegment.tag:
             // Add the segment to the track.
             // Pop the segment from the stack.
-            guard let segment = stack.pop() as? TrackSegment else { break }
+            guard let segment = stack.pop()?.element as? TrackSegment else { break }
             // Take a peek at the new top most element, the track.
-            let group = stack.peek() as? Track
+            let group = stack.peek()?.element as? Track
             group?.segments.append(segment)
 
         case TrackPoint.tag:
             // Add the trackpoint to the segment.
-            guard let trackpoint = stack.pop() as? TrackPoint else { break }
-            let segment = stack.peek() as? TrackSegment
+            guard let trackpoint = stack.pop()?.element as? TrackPoint else { break }
+            let segment = stack.peek()?.element as? TrackSegment
             segment?.trackpoints.append(trackpoint)
 
         default:
             // TODO: We do currently not support nested datastructures. e.g extensions
-            let element = stack.peek()
+            let element = stack.peek()?.element
             element?.properties[elementName] = foundCharacters
         }
 
@@ -211,7 +251,7 @@ public class GPXParser: NSObject, XMLParserDelegate, @unchecked Sendable {
     }
 
     public func parserDidEndDocument(_: XMLParser) {
-        fileIsParsed = true
-        fileIsParsing = false
+        // parse(_:) owns the synchronized lifecycle transition after XMLParser
+        // returns, including malformed-document failures.
     }
 }

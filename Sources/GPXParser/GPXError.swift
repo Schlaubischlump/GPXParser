@@ -12,5 +12,7 @@ public enum GPXError: Error {
     case FileNotFound(_ message: String)
     case CreateParser(_ message: String)
     case InvalidDocument(_ message: String)
+    case ParseInProgress
+    case ParseAlreadyAttempted
     case UnknowParseError(_ message: String)
 }
